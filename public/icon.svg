@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#192334" />
+      <stop offset="100%" stop-color="#0d121a" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2d28b" />
+      <stop offset="100%" stop-color="#c49134" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="108" fill="url(#bg)" />
+  <rect x="28" y="28" width="456" height="456" rx="86" fill="none" stroke="#2bb673" stroke-opacity="0.35" stroke-width="6" />
+  <!-- Subtle 2x2 board motif -->
+  <g opacity="0.16">
+    <rect x="96" y="96" width="160" height="160" rx="16" fill="#2bb673" />
+    <rect x="256" y="256" width="160" height="160" rx="16" fill="#2bb673" />
+  </g>
+  <!-- Chess Knight / King Crown Silhouette -->
+  <path d="M256 96l20 36 38-18-16 46c18 14 28 36 28 60 0 26-12 48-32 62l34 86H184l34-86c-20-14-32-36-32-62 0-24 10-46 28-60l-16-46 38 18 20-36z" fill="url(#gold)" />
+  <rect x="164" y="384" width="184" height="32" rx="12" fill="#2bb673" />
+</svg>

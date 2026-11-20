@@ -1,0 +1,2652 @@
+
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#111827">
+<title>Mahmoud Chess — Enhanced</title>
+
+<style>
+:root{
+--bg:#10141d;
+--panel:#1b2230;
+--panel2:#252e3e;
+--text:#f2f5fa;
+--muted:#aab5c5;
+--accent:#36c987;
+--danger:#ef5350;
+--light:#eee2cc;
+--dark:#9b7653;
+--last:#d6c34b77;
+--select:#40c98c88;
+}
+*{box-sizing:border-box}
+body{
+margin:0;
+background:radial-gradient(circle at top,#202b3b,var(--bg) 65%);
+color:var(--text);
+font-family:system-ui,"Segoe UI",sans-serif;
+min-height:100vh;
+padding:14px;
+display:flex;
+justify-content:center;
+}
+.app{
+width:min(100%,560px);
+display:flex;
+flex-direction:column;
+gap:12px;
+}
+header{text-align:center}
+h1{font-size:1.35rem;margin:3px;color:var(--accent)}
+.sub{font-size:.78rem;color:var(--muted)}
+.card{
+background:var(--panel);
+border:1px solid #ffffff12;
+border-radius:14px;
+padding:12px;
+box-shadow:0 8px 24px #0004;
+}
+.topline,.row{
+display:flex;
+align-items:center;
+justify-content:space-between;
+gap:8px;
+}
+.status{font-size:.9rem;font-weight:700}
+.clock{
+font-variant-numeric:tabular-nums;
+background:var(--panel2);
+padding:7px 11px;
+border-radius:9px;
+font-weight:800;
+min-width:76px;
+text-align:center;
+}
+.board-wrap{
+width:min(94vw,520px);
+aspect-ratio:1;
+margin:auto;
+position:relative;
+border-radius:8px;
+overflow:hidden;
+box-shadow:0 12px 30px #0007;
+touch-action:none;
+}
+.board{
+width:100%;
+height:100%;
+display:grid;
+grid-template:repeat(8,1fr)/repeat(8,1fr);
+direction:ltr;
+touch-action:none;
+}
+.sq{
+position:relative;
+display:grid;
+place-items:center;
+user-select:none;
+cursor:pointer;
+min-width:0;
+min-height:0;
+}
+.sq.light{background:var(--light)}
+.sq.dark{background:var(--dark)}
+.sq.last{
+background-image:linear-gradient(#d9d04466,#d9d04466);
+}
+.sq.sel{
+background-image:linear-gradient(var(--select),var(--select));
+}
+.sq.check{
+background-image:radial-gradient(circle,#f33c 5%,#e33a 75%);
+}
+.piece{
+width:86%;
+height:86%;
+z-index:2;
+cursor:pointer;
+display:grid;
+place-items:center;
+pointer-events:none;
+filter:drop-shadow(0 2px 2px rgba(0,0,0,.32));
+will-change:transform;
+}
+.piece svg{
+width:100%;
+height:100%;
+display:block;
+}
+.piece.is-hidden{
+opacity:0;
+}
+.drag-ghost{
+position:fixed;
+width:58px;
+height:58px;
+z-index:10020;
+pointer-events:none;
+transform:translate(-50%,-55%) scale(1.18);
+filter:drop-shadow(0 6px 10px rgba(0,0,0,.55));
+display:none;
+}
+.drag-ghost svg{
+width:100%;
+height:100%;
+display:block;
+}
+.dot{
+position:absolute;
+width:31%;
+height:31%;
+border-radius:50%;
+background:#087b43cc;
+border:2px solid #eafff0aa;
+box-shadow:0 0 0 2px #063b2788;
+z-index:5;
+pointer-events:none;
+}
+.capture{
+position:absolute;
+inset:4%;
+border:5px solid #d22d;
+border-radius:50%;
+box-shadow:inset 0 0 0 2px #fff8;
+z-index:5;
+pointer-events:none;
+}
+.coord{
+position:absolute;
+font-size:clamp(8px,2vw,11px);
+font-weight:800;
+opacity:.7;
+z-index:1;
+pointer-events:none;
+}
+.rank{top:2px;left:3px}
+.file{bottom:2px;right:3px}
+.controls{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:7px;
+}
+button,select{
+border:1px solid #ffffff18;
+border-radius:9px;
+background:var(--panel2);
+color:var(--text);
+padding:10px 7px;
+font-weight:700;
+font-size:.83rem;
+min-width:0;
+}
+button{cursor:pointer}
+button.primary{
+background:var(--accent);
+color:#082417;
+border:0;
+}
+button.danger{
+background:#a93232;
+border:0;
+}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.settings{
+display:grid;
+grid-template-columns:1fr 1fr;
+gap:8px;
+}
+.setting{
+display:flex;
+flex-direction:column;
+gap:5px;
+font-size:.78rem;
+color:var(--muted);
+}
+select{width:100%}
+.captured{
+min-height:26px;
+display:flex;
+flex-wrap:wrap;
+align-items:center;
+gap:2px;
+direction:ltr;
+}
+.captured svg{
+width:18px;
+height:18px;
+display:block;
+}
+.history{
+height:90px;
+overflow:auto;
+background:#111722;
+border-radius:9px;
+padding:8px;
+direction:ltr;
+text-align:left;
+font:.82rem ui-monospace,monospace;
+color:#dce5f2;
+}
+.hint{
+font-size:.75rem;
+color:var(--muted);
+text-align:center;
+}
+.modal{
+position:fixed;
+inset:0;
+background:#000b;
+display:none;
+place-items:center;
+z-index:10010;
+padding:20px;
+}
+.modal.show{display:grid}
+.dialog{
+position:relative;
+width:min(100%,340px);
+background:var(--panel);
+border:1px solid #ffffff22;
+border-radius:16px;
+padding:20px;
+text-align:center;
+}
+.modal-close{
+position:absolute;
+top:10px;
+left:10px;
+width:32px;
+height:32px;
+padding:0;
+display:grid;
+place-items:center;
+border-radius:8px;
+font-size:15px;
+line-height:1;
+background:#252e3e;
+color:#dce5f2;
+border:1px solid #ffffff22;
+}
+.choices{
+display:flex;
+justify-content:center;
+gap:10px;
+margin:15px 0;
+}
+.choices button{
+width:58px;
+height:58px;
+padding:7px;
+display:grid;
+place-items:center;
+}
+.choices button svg{
+width:100%;
+height:100%;
+display:block;
+}
+.dialog p{
+color:var(--muted);
+line-height:1.6;
+}
+.engine-info{
+font-size:.72rem;
+color:var(--muted);
+text-align:center;
+margin-top:8px;
+}
+body.board-expanded{
+display:block;
+width:100vw;
+height:100vh;
+height:100dvh;
+min-height:0;
+padding:0;
+margin:0;
+overflow:hidden;
+background:#10141d;
+}
+body.board-expanded .app{
+display:block;
+width:100vw;
+height:100vh;
+height:100dvh;
+max-width:none;
+margin:0;
+padding:0;
+}
+body.board-expanded .app>*:not(.board-wrap){
+display:none!important;
+}
+body.board-expanded .board-wrap{
+position:fixed;
+inset:0;
+width:min(100vw,100dvh);
+height:min(100vw,100dvh);
+max-width:none;
+max-height:none;
+aspect-ratio:1;
+margin:auto;
+border-radius:0;
+box-shadow:none;
+overflow:hidden;
+touch-action:none;
+z-index:1000;
+}
+/* Keep the end-of-game message inside the expanded board's stacking layer. */
+body.board-expanded .board-wrap > #message.modal{
+position:absolute!important;
+inset:0!important;
+z-index:2147483647!important;
+width:100%!important;
+height:100%!important;
+}
+.board-expand-floating{
+display:none;
+position:fixed;
+top:max(12px,env(safe-area-inset-top));
+right:max(12px,env(safe-area-inset-right));
+z-index:10001;
+background:#1b2230ee;
+color:#fff;
+border:1px solid #ffffff55;
+border-radius:12px;
+padding:11px 15px;
+font-size:14px;
+font-weight:800;
+box-shadow:0 4px 16px #0008;
+}
+body.board-expanded .board-expand-floating{
+display:block;
+}
+@media(min-width:650px){
+.app{width:520px}
+}
+</style>
+</head>
+
+<body>
+
+<main class="app">
+
+<header>
+<h1>♟ محمود شطرنج</h1>
+<div class="sub">Mahmoud Chess — Enhanced Edition</div>
+<div class="sub">لعبة شطرنج كاملة — تعمل دون إنترنت</div>
+</header>
+
+<section class="card">
+<div class="topline">
+<div class="status" id="status">دور الأبيض</div>
+<div class="clock" id="clockB">10:00</div>
+</div>
+</section>
+
+<div class="board-wrap">
+<div class="board" id="board" aria-label="رقعة الشطرنج"></div>
+</div>
+
+<section class="card">
+<div class="topline">
+<span>قطع الأبيض المأكولة</span>
+<div class="captured" id="capW"></div>
+</div>
+<div class="topline">
+<span>قطع الأسود المأكولة</span>
+<div class="captured" id="capB"></div>
+</div>
+<div class="topline" style="margin-top:8px">
+<span class="status" id="turn">الأبيض يلعب</span>
+<div class="clock" id="clockW">10:00</div>
+</div>
+</section>
+
+<section class="card">
+
+<div class="settings">
+
+<label class="setting">
+نمط اللعب
+<select id="mode">
+<option value="pvp">لاعبان</option>
+<option value="ai">ضد الكمبيوتر</option>
+</select>
+</label>
+
+<label class="setting">
+مستوى الكمبيوتر
+<select id="level">
+<option value="1">سهل</option>
+<option value="2" selected>متوسط</option>
+<option value="3">صعب</option>
+</select>
+</label>
+
+<label class="setting">
+وقت المباراة
+<select id="time">
+<option value="0">بدون ساعة</option>
+<option value="3">3 دقائق</option>
+<option value="5">5 دقائق</option>
+<option value="10" selected>10 دقائق</option>
+<option value="15">15 دقيقة</option>
+</select>
+</label>
+
+<label class="setting">
+شكل الرقعة
+<select id="theme">
+<option value="wood">خشبي</option>
+<option value="green">أخضر</option>
+<option value="blue">أزرق</option>
+</select>
+</label>
+
+</div>
+
+<div class="controls" style="margin-top:10px">
+<button class="primary" id="new">لعبة جديدة</button>
+<button id="undo">تراجع</button>
+<button id="flip">قلب الرقعة</button>
+<button id="sound">🔊 الصوت</button>
+<button id="fullscreen">⛶ تكبير</button>
+<button id="fen">نسخ FEN</button>
+<button id="save">حفظ الآن</button>
+<button id="resume">استعادة</button>
+<button class="danger" id="reset">مسح الحفظ</button>
+</div>
+
+<div class="engine-info" id="engineInfo">
+محرك البحث: Minimax + Alpha-Beta + Quiescence + TT
+</div>
+
+</section>
+
+<section class="card">
+<div style="font-weight:800;margin-bottom:7px">سجل النقلات</div>
+<div class="history" id="history">ابدأ مباراة جديدة</div>
+</section>
+
+<div class="hint">
+المس القطعة ثم اختر المربع أو اسحبها إلى المربع الهدف.
+</div>
+
+</main>
+
+<div class="modal" id="promotion">
+<div class="dialog">
+<h3>ترقية البيدق</h3>
+<p>اختر القطعة التي تريد الترقية إليها</p>
+<div class="choices" id="promotionChoices"></div>
+</div>
+</div>
+
+<div class="modal" id="message">
+<div class="dialog">
+<button type="button" class="modal-close" id="messageClose" aria-label="إغلاق لرؤية الرقعة">✕</button>
+<h2 id="messageTitle">انتهت المباراة</h2>
+<p id="messageText"></p>
+<button class="primary" id="messageNew">لعبة جديدة</button>
+</div>
+</div>
+
+<div class="drag-ghost" id="dragGhost" aria-hidden="true"></div>
+
+<script>
+"use strict";
+
+/* =================================
+   إعدادات اللعبة والمتغيرات
+================================= */
+
+const $ = id => document.getElementById(id);
+
+const SYMBOL = {
+ K:"♔",Q:"♕",R:"♖",B:"♗",N:"♘",P:"♙",
+ k:"♚",q:"♛",r:"♜",b:"♝",n:"♞",p:"♟"
+};
+
+function pieceSvg(piece){
+ const isWhite=piece===piece.toUpperCase();
+ const kind=piece.toUpperCase();
+ const fill=isWhite?"#faf9f5":"#53514e";
+ const shadowFill=isWhite?"#d7d4cc":"#3d3b38";
+ const stroke=isWhite?"#2c2b29":"#1b1a18";
+ const inner=isWhite?"#2c2b29":"#b5b1aa";
+ let body="";
+ if(kind==="P"){
+  body=`<path d="M 22.5,9.5 C 19.7,9.5 17.5,11.7 17.5,14.5 C 17.5,16.1 18.2,17.5 19.4,18.4 C 16.5,19.9 14.8,22.8 14.8,26.2 C 14.8,28.5 15.8,30.6 17.4,32 C 13.7,32.9 11.3,35.2 11,38.5 L 34,38.5 C 33.7,35.2 31.3,32.9 27.6,32 C 29.2,30.6 30.2,28.5 30.2,26.2 C 30.2,22.8 28.5,19.9 25.6,18.4 C 26.8,17.5 27.5,16.1 27.5,14.5 C 27.5,11.7 25.3,9.5 22.5,9.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 23.2,10.5 C 25.5,11 26.8,13 26.5,15.3 C 26.2,16.8 25.2,17.7 24.4,18.3 C 27.2,19.8 29,22.6 29,26.1 C 29,28.5 28,30.5 26.5,31.8 C 29.9,32.8 32,34.9 32.5,37.7 L 28.2,37.7 C 27.6,34.4 25.9,32.3 24.2,31.3 C 25.8,29.6 26.4,27.2 26,24.6 C 25.6,21.8 24.3,19.6 22.6,18.5 C 24.2,17.2 25.1,15.2 24.7,13 C 24.5,11.8 23.9,11 23.2,10.5 Z" fill="${shadowFill}" opacity="0.7"/>
+  <path d="M 22.5,9.5 C 19.7,9.5 17.5,11.7 17.5,14.5 C 17.5,16.1 18.2,17.5 19.4,18.4 C 16.5,19.9 14.8,22.8 14.8,26.2 C 14.8,28.5 15.8,30.6 17.4,32 C 13.7,32.9 11.3,35.2 11,38.5 L 34,38.5 C 33.7,35.2 31.3,32.9 27.6,32 C 29.2,30.6 30.2,28.5 30.2,26.2 C 30.2,22.8 28.5,19.9 25.6,18.4 C 26.8,17.5 27.5,16.1 27.5,14.5 C 27.5,11.7 25.3,9.5 22.5,9.5 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 18.5,18.6 Q 22.5,19.6 26.5,18.6 M 17.4,32 Q 22.5,33.2 27.6,32" stroke="${inner}" stroke-width="1.25"/>`;
+ }else if(kind==="R"){
+  body=`<path d="M 11.5,9 L 15.5,9 L 15.5,12 L 19.5,12 L 19.5,9 L 25.5,9 L 25.5,12 L 29.5,12 L 29.5,9 L 33.5,9 L 33.5,14.5 L 30.5,17.5 L 30.5,30 L 33,32.5 L 33,35 L 34.5,35 L 34.5,38.5 L 10.5,38.5 L 10.5,35 L 12,35 L 12,32.5 L 14.5,30 L 14.5,17.5 L 11.5,14.5 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 26.5,17.5 L 29.7,17.5 L 29.7,30 L 32.1,32.5 L 32.1,35 L 33.6,35 L 33.6,37.7 L 27.5,37.7 L 27.5,35 L 26.5,32.5 Z" fill="${shadowFill}" opacity="0.72"/>
+  <path d="M 11.5,9 L 15.5,9 L 15.5,12 L 19.5,12 L 19.5,9 L 25.5,9 L 25.5,12 L 29.5,12 L 29.5,9 L 33.5,9 L 33.5,14.5 L 30.5,17.5 L 30.5,30 L 33,32.5 L 33,35 L 34.5,35 L 34.5,38.5 L 10.5,38.5 L 10.5,35 L 12,35 L 12,32.5 L 14.5,30 L 14.5,17.5 L 11.5,14.5 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 14.5,17.5 L 30.5,17.5 M 14.5,30 L 30.5,30 M 12,32.5 L 33,32.5 M 12,35 L 33,35" stroke="${inner}" stroke-width="1.25"/>`;
+ }else if(kind==="N"){
+  body=`<path d="M 22,10 C 31.8,11.2 37,18.2 35.8,35 L 37,35 L 37,38.5 L 10.5,38.5 L 10.5,35 L 13,35 C 13.6,29.2 19.2,27.2 21.8,22.8 C 19.6,23.2 17.5,25.2 14.5,26.8 C 12.2,27.9 9.5,27.6 8.5,25.6 C 7.7,24 9.5,21.2 11.6,18.6 C 12.8,17.1 14,15.3 14.8,13.6 C 14.2,12 14.2,9.8 15.2,8.4 C 16.5,8.2 18.2,10.2 18.8,11.2 C 19.7,10.4 20.8,8.5 22.3,8 C 23,8.5 22.5,9.5 22,10 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 22.8,11.2 C 30.6,12.6 35.3,19.2 34.4,34.6 L 29.2,34.6 C 30.2,23.5 27.6,15.2 22.8,11.2 Z" fill="${shadowFill}" opacity="0.72"/>
+  <path d="M 22,10 C 31.8,11.2 37,18.2 35.8,35 L 37,35 L 37,38.5 L 10.5,38.5 L 10.5,35 L 13,35 C 13.6,29.2 19.2,27.2 21.8,22.8 C 19.6,23.2 17.5,25.2 14.5,26.8 C 12.2,27.9 9.5,27.6 8.5,25.6 C 7.7,24 9.5,21.2 11.6,18.6 C 12.8,17.1 14,15.3 14.8,13.6 C 14.2,12 14.2,9.8 15.2,8.4 C 16.5,8.2 18.2,10.2 18.8,11.2 C 19.7,10.4 20.8,8.5 22.3,8 C 23,8.5 22.5,9.5 22,10 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <circle cx="16.2" cy="15.8" r="1.25" fill="${inner}"/>
+  <path d="M 10.7,24.4 C 10.9,23.8 11.4,23.4 11.9,23.3 M 13,35 L 35.8,35 M 24.8,13.5 C 29.5,16.5 32.2,23 32,32.5" stroke="${inner}" stroke-width="1.25"/>`;
+ }else if(kind==="B"){
+  body=`<circle cx="22.5" cy="7.8" r="2.4" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>
+  <path d="M 22.5,10.4 C 17,13.2 14.5,18.8 15,24.2 C 15.3,27.3 16.6,29.5 18,31.2 L 15,32.8 L 15,35 L 11,35 L 11,38.5 L 34,38.5 L 34,35 L 30,35 L 30,32.8 L 27,31.2 C 28.4,29.5 29.7,27.3 30,24.2 C 30.5,18.8 28,13.2 22.5,10.4 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 22.8,11.6 C 27,14.5 28.8,19.4 28.5,24.2 C 28.3,27 27.2,29.2 25.8,30.9 L 28.6,32.8 L 28.6,35 L 32.8,35 L 32.8,37.7 L 26.2,37.7 L 26.2,35 L 24.4,31.2 C 25.4,27.8 26,23.2 25.2,18.2 C 24.7,15.3 23.8,13.1 22.8,11.6 Z" fill="${shadowFill}" opacity="0.72"/>
+  <path d="M 22.5,10.4 C 17,13.2 14.5,18.8 15,24.2 C 15.3,27.3 16.6,29.5 18,31.2 L 15,32.8 L 15,35 L 11,35 L 11,38.5 L 34,38.5 L 34,35 L 30,35 L 30,32.8 L 27,31.2 C 28.4,29.5 29.7,27.3 30,24.2 C 30.5,18.8 28,13.2 22.5,10.4 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 19,21.5 L 25.2,15.2 M 18,31.2 Q 22.5,32.4 27,31.2 M 15,35 L 30,35" stroke="${inner}" stroke-width="1.35"/>`;
+ }else if(kind==="Q"){
+  body=`<circle cx="7.5" cy="13" r="2.1" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+  <circle cx="14.2" cy="9.6" r="2.1" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+  <circle cx="22.5" cy="8.2" r="2.1" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+  <circle cx="30.8" cy="9.6" r="2.1" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+  <circle cx="37.5" cy="13" r="2.1" fill="${fill}" stroke="${stroke}" stroke-width="1.45"/>
+  <path d="M 8.5,15.2 L 14,25.5 L 15,12 L 19.5,24.8 L 22.5,10.5 L 25.5,24.8 L 30,12 L 31,25.5 L 36.5,15.2 L 31.8,31 L 31.8,35 L 34,35 L 34,38.5 L 11,38.5 L 11,35 L 13.2,35 L 13.2,31 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 35.1,16.6 L 30.6,31 L 30.6,35 L 32.8,35 L 32.8,37.7 L 26.8,37.7 L 26.8,31.2 L 30.5,14.8 L 30.2,26.2 Z" fill="${shadowFill}" opacity="0.7"/>
+  <path d="M 8.5,15.2 L 14,25.5 L 15,12 L 19.5,24.8 L 22.5,10.5 L 25.5,24.8 L 30,12 L 31,25.5 L 36.5,15.2 L 31.8,31 L 31.8,35 L 34,35 L 34,38.5 L 11,38.5 L 11,35 L 13.2,35 L 13.2,31 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 13.2,31 Q 22.5,29.5 31.8,31 M 13.2,35 L 31.8,35" stroke="${inner}" stroke-width="1.3"/>`;
+ }else{
+  body=`<path d="M 22.5,11.8 L 22.5,6 M 19.5,8.5 L 25.5,8.5" stroke="${stroke}" stroke-width="2.1"/>
+  ${!isWhite?`<path d="M 22.5,11.6 L 22.5,6.4 M 19.9,8.5 L 25.1,8.5" stroke="${inner}" stroke-width="0.9"/>`:""}
+  <path d="M 22.5,25 C 22.5,25 26.8,17.8 25.2,14.5 C 25.2,14.5 24,12.2 22.5,12.2 C 21,12.2 19.8,14.5 19.8,14.5 C 18.2,17.8 22.5,25 22.5,25 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 13.5,31.2 C 8.5,27 7,20 11,16.2 C 14.5,13 20,16.5 22.5,22.2 C 25,16.5 30.5,13 34,16.2 C 38,20 36.5,27 31.5,31.2 L 31.5,35 L 34,35 L 34,38.5 L 11,38.5 L 11,35 L 13.5,35 Z" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 32.8,17 C 36.2,20.3 34.8,26.6 30.3,30.6 L 30.3,35 L 32.8,35 L 32.8,37.7 L 26.8,37.7 L 26.8,31.2 C 30.2,27.4 31.4,21.2 29.2,16.4 C 30.6,16.1 31.8,16.2 32.8,17 Z" fill="${shadowFill}" opacity="0.72"/>
+  <path d="M 13.5,31.2 C 8.5,27 7,20 11,16.2 C 14.5,13 20,16.5 22.5,22.2 C 25,16.5 30.5,13 34,16.2 C 38,20 36.5,27 31.5,31.2 L 31.5,35 L 34,35 L 34,38.5 L 11,38.5 L 11,35 L 13.5,35 Z" stroke="${stroke}" stroke-width="1.6"/>
+  <path d="M 22.5,22.2 L 22.5,30.4 M 13.5,31.2 Q 22.5,29.2 31.5,31.2 M 13.5,35 L 31.5,35" stroke="${inner}" stroke-width="1.3"/>`;
+ }
+ return `<svg viewBox="0 0 45 45" fill="none" xmlns="http://www.w3.org/2000/svg"><g stroke-linejoin="round" stroke-linecap="round">${body}</g></svg>`;
+}
+
+const START =
+"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+
+const VAL = {
+ p:100,
+ n:320,
+ b:335,
+ r:500,
+ q:900,
+ k:20000
+};
+
+let s;
+let selected = null;
+let legal = [];
+let flipped = false;
+let sound = true;
+let audio = null;
+let audioMaster = null;
+let aiBusy = false;
+let aiToken = 0;
+let timer = null;
+let lastTick = 0;
+let lastSave = 0;
+let pointerDrag = null;
+let pendingSlide = null;
+let searchNodes = 0;
+let searchStopped = false;
+let transTable = new Map();
+
+/* =================================
+   أدوات أساسية
+================================= */
+
+function cloneBoard(b){
+ return b.map(row => row.slice());
+}
+
+function clone(x){
+ return JSON.parse(JSON.stringify(x));
+}
+
+function color(p){
+ if(!p) return null;
+ return p === p.toUpperCase() ? "w" : "b";
+}
+
+function inside(r,c){
+ return r>=0 && r<8 && c>=0 && c<8;
+}
+
+function sqName(pos){
+ return "abcdefgh"[pos[1]] + (8-pos[0]);
+}
+
+function nameSq(n){
+ return [8-Number(n[1]),n.charCodeAt(0)-97];
+}
+
+/* =================================
+   قراءة FEN والتحقق منها
+================================= */
+
+function parseBoard(f){
+
+ const rows = f.split(" ")[0].split("/");
+
+ if(rows.length !== 8)
+  throw new Error("Invalid FEN rows");
+
+ return rows.map(row => {
+
+  let a = [];
+
+  for(const ch of row){
+
+   if(/[1-8]/.test(ch)){
+    for(let i=0;i<Number(ch);i++) a.push(null);
+   }
+   else if("KQRBNPkqrbnp".includes(ch)){
+    a.push(ch);
+   }
+   else{
+    throw new Error("Invalid piece");
+   }
+  }
+
+  if(a.length !== 8)
+   throw new Error("Invalid row length");
+
+  return a;
+ });
+}
+
+function parseFen(f){
+
+ const p = f.trim().split(/\s+/);
+
+ if(p.length !== 6)
+  throw new Error("Invalid FEN");
+
+  const board = parseBoard(p[0]);
+
+  // Basic structural validation: one king per side and no pawn on a back rank.
+  const whiteKings=board.flat().filter(piece=>piece==="K").length;
+  const blackKings=board.flat().filter(piece=>piece==="k").length;
+  if(whiteKings!==1 || blackKings!==1)
+   throw new Error("Invalid king count");
+  for(let c=0;c<8;c++){
+   if(board[0][c]?.toLowerCase()==="p" ||
+      board[7][c]?.toLowerCase()==="p")
+    throw new Error("Invalid pawn position");
+  }
+
+  if(p[1] !== "w" && p[1] !== "b")
+  throw new Error("Invalid turn");
+
+ if(p[2] !== "-" && !/^(?!.*(.).*\1)[KQkq]+$/.test(p[2]))
+  throw new Error("Invalid castling");
+
+ let ep = null;
+
+ if(p[3] !== "-"){
+  if(!/^[a-h][36]$/.test(p[3]))
+   throw new Error("Invalid en passant");
+  ep = nameSq(p[3]);
+ }
+
+ const half = Number(p[4]);
+ const full = Number(p[5]);
+
+ if(!Number.isInteger(half) || half<0 ||
+    !Number.isInteger(full) || full<1)
+  throw new Error("Invalid counters");
+
+ s.b = board;
+ s.turn = p[1];
+ s.rights = p[2] === "-" ? "" : p[2];
+ s.ep = ep;
+ s.half = half;
+ s.full = full;
+
+}
+
+function fen(){
+
+ const rows = s.b.map(row => {
+
+  let out = "";
+  let n = 0;
+
+  for(const p of row){
+
+   if(!p){
+    n++;
+   }else{
+    if(n){
+     out += n;
+     n = 0;
+    }
+    out += p;
+   }
+  }
+
+  if(n) out += n;
+
+  return out;
+
+ }).join("/");
+
+ return `${rows} ${s.turn} ${s.rights||"-"} ${
+  s.ep===null ? "-" : sqName(s.ep)
+ } ${s.half} ${s.full}`;
+}
+
+/* =================================
+   الحالة الأولية
+================================= */
+
+function initial(){
+
+ const state = {
+  b:parseBoard(START),
+  turn:"w",
+  rights:"KQkq",
+  ep:null,
+  half:0,
+  full:1,
+  history:[],
+  captured:{w:[],b:[]},
+  repetition:[],
+  over:false,
+  clocks:{w:600,b:600},
+  initialTime:10,
+  started:false
+ };
+
+ return state;
+}
+
+function repetitionKey(){
+
+ const parts=fen().split(" ");
+ // FEN en-passant targets count for repetition only when an en-passant
+ // capture is actually legal in the current position.
+ const canEnPassant=s.ep!==null &&
+  legalFor(s.b,s.turn,s.rights,s.ep).some(move=>move.ep);
+ const ep=canEnPassant?sqName(s.ep):"-";
+ return [parts[0],parts[1],parts[2],ep].join(" ");
+}
+
+function snapshot(){
+
+ return {
+  fen:fen(),
+  captured:clone(s.captured),
+  clocks:clone(s.clocks),
+  started:s.started,
+  over:s.over,
+  repetition:clone(s.repetition)
+ };
+}
+
+/* =================================
+   كشف الهجوم والكش
+================================= */
+
+function attacked(b,r,c,by){
+
+ const pawnDir = by==="w" ? 1 : -1;
+ const pawnRow = r+pawnDir;
+
+ for(const dc of [-1,1]){
+
+  if(inside(pawnRow,c+dc) &&
+     b[pawnRow][c+dc] === (by==="w"?"P":"p"))
+   return true;
+ }
+
+ const knights = [
+  [-2,-1],[-2,1],[-1,-2],[-1,2],
+  [1,-2],[1,2],[2,-1],[2,1]
+ ];
+
+ for(const [dr,dc] of knights){
+
+  const rr=r+dr, cc=c+dc;
+
+  if(inside(rr,cc) &&
+     b[rr][cc] === (by==="w"?"N":"n"))
+   return true;
+ }
+
+ const dirs = [
+  [1,0],[-1,0],[0,1],[0,-1],
+  [1,1],[1,-1],[-1,1],[-1,-1]
+ ];
+
+ for(const [dr,dc] of dirs){
+
+  let rr=r+dr;
+  let cc=c+dc;
+  let dist=1;
+
+  while(inside(rr,cc)){
+
+   const p=b[rr][cc];
+
+   if(p){
+
+    if(color(p)===by){
+
+     const t=p.toLowerCase();
+
+     if(
+      t==="q" ||
+      (dist===1 && t==="k") ||
+      ((dr===0 || dc===0) && t==="r") ||
+      ((dr!==0 && dc!==0) && t==="b")
+     ){
+      return true;
+     }
+    }
+
+    break;
+   }
+
+   rr+=dr;
+   cc+=dc;
+   dist++;
+  }
+ }
+
+ return false;
+}
+
+function kingPos(b,col){
+
+ for(let r=0;r<8;r++){
+  for(let c=0;c<8;c++){
+
+   if(b[r][c] === (col==="w"?"K":"k"))
+    return [r,c];
+
+  }
+ }
+
+ return null;
+}
+
+function inCheck(b,col){
+
+ const k=kingPos(b,col);
+
+ return !k ||
+ attacked(b,k[0],k[1],col==="w"?"b":"w");
+}
+
+/* =================================
+   توليد النقلات المحتملة
+================================= */
+
+function pseudo(b,r,c,rights,ep){
+
+ const p=b[r][c];
+ const col=color(p);
+ const t=p?.toLowerCase();
+ const out=[];
+
+ if(!p) return out;
+
+ const add=(rr,cc,extra={})=>{
+
+  if(!inside(rr,cc)) return;
+
+  const target=b[rr][cc];
+
+  // Kings are never captured; checkmate ends the game instead.
+  if(target && target.toLowerCase()==="k") return;
+
+  if(color(target)!==col){
+   out.push({
+    from:[r,c],
+    to:[rr,cc],
+    piece:p,
+    capture:target||null,
+    ...extra
+   });
+  }
+ };
+
+ if(t==="p"){
+
+  const d=col==="w"?-1:1;
+  const start=col==="w"?6:1;
+  const last=col==="w"?0:7;
+  const rr=r+d;
+
+  if(inside(rr,c) && !b[rr][c]){
+
+   if(rr===last){
+
+    for(const pr of col==="w"?"QRBN":"qrbn")
+     add(rr,c,{promotion:pr});
+
+   }else{
+
+    add(rr,c);
+
+   }
+
+   if(r===start && !b[r+2*d][c])
+    add(r+2*d,c,{double:true});
+  }
+
+  for(const dc of [-1,1]){
+
+   const cc=c+dc;
+
+   if(!inside(rr,cc)) continue;
+
+   if(color(b[rr][cc]) === (col==="w"?"b":"w")){
+
+    if(rr===last){
+
+     for(const pr of col==="w"?"QRBN":"qrbn")
+      add(rr,cc,{promotion:pr});
+
+    }else{
+
+     add(rr,cc);
+
+    }
+   }
+
+   if(ep && ep[0]===rr && ep[1]===cc &&
+      !b[rr][cc]){
+    add(rr,cc,{
+     ep:true,
+     capture:col==="w"?"p":"P"
+    });
+   }
+  }
+
+ }else if(t==="n"){
+
+  const dirs=[
+   [-2,-1],[-2,1],[-1,-2],[-1,2],
+   [1,-2],[1,2],[2,-1],[2,1]
+  ];
+
+  for(const [dr,dc] of dirs)
+   add(r+dr,c+dc);
+
+ }else if(t==="k"){
+
+  for(let dr=-1;dr<=1;dr++){
+   for(let dc=-1;dc<=1;dc++){
+    if(dr||dc) add(r+dr,c+dc);
+   }
+  }
+
+  const home=col==="w"?7:0;
+  const enemy=col==="w"?"b":"w";
+  const R=col==="w"?"R":"r";
+  const ks=col==="w"?"K":"k";
+  const qs=col==="w"?"Q":"q";
+
+  if(r===home && c===4 && !inCheck(b,col)){
+
+   if(
+    rights.includes(ks) &&
+    b[home][7]===R &&
+    !b[home][5] &&
+    !b[home][6] &&
+    !attacked(b,home,5,enemy) &&
+    !attacked(b,home,6,enemy)
+   ){
+    out.push({
+     from:[r,c],
+     to:[home,6],
+     piece:p,
+     castle:"K"
+    });
+   }
+
+   if(
+    rights.includes(qs) &&
+    b[home][0]===R &&
+    !b[home][1] &&
+    !b[home][2] &&
+    !b[home][3] &&
+    !attacked(b,home,3,enemy) &&
+    !attacked(b,home,2,enemy)
+   ){
+    out.push({
+     from:[r,c],
+     to:[home,2],
+     piece:p,
+     castle:"Q"
+    });
+   }
+  }
+
+ }else{
+
+  let dirs=[];
+
+  if(t==="r"||t==="q")
+   dirs.push([1,0],[-1,0],[0,1],[0,-1]);
+
+  if(t==="b"||t==="q")
+   dirs.push([1,1],[1,-1],[-1,1],[-1,-1]);
+
+  for(const [dr,dc] of dirs){
+
+   let rr=r+dr;
+   let cc=c+dc;
+
+   while(inside(rr,cc)){
+
+    if(!b[rr][cc]){
+     out.push({
+      from:[r,c],
+      to:[rr,cc],
+      piece:p
+     });
+    }else{
+
+     if(color(b[rr][cc])!==col)
+      add(rr,cc);
+
+     break;
+    }
+
+    rr+=dr;
+    cc+=dc;
+   }
+  }
+ }
+
+ return out;
+}
+
+/* =================================
+   تنفيذ نقلة على نسخة من الرقعة
+================================= */
+
+function applyTo(pos,m){
+
+ const b=cloneBoard(pos.b);
+ let rights=pos.rights;
+ let ep=null;
+
+ const [r,c]=m.from;
+ const [rr,cc]=m.to;
+
+ const p=b[r][c];
+ const target=b[rr][cc];
+
+ b[r][c]=null;
+
+ if(m.ep)
+  b[r][cc]=null;
+
+ if(m.castle){
+
+  if(m.castle==="K"){
+   b[rr][5]=b[rr][7];
+   b[rr][7]=null;
+  }else{
+   b[rr][3]=b[rr][0];
+   b[rr][0]=null;
+  }
+ }
+
+ b[rr][cc]=m.promotion||p;
+
+ if(p.toLowerCase()==="k"){
+  rights=rights.replace(
+   pos.turn==="w"?/K|Q/g:/k|q/g,
+   ""
+  );
+ }
+
+ if(p.toLowerCase()==="r"){
+
+  if(r===7&&c===0) rights=rights.replace("Q","");
+  if(r===7&&c===7) rights=rights.replace("K","");
+  if(r===0&&c===0) rights=rights.replace("q","");
+  if(r===0&&c===7) rights=rights.replace("k","");
+
+ }
+
+ if(target?.toLowerCase()==="r"){
+
+  if(rr===7&&cc===0) rights=rights.replace("Q","");
+  if(rr===7&&cc===7) rights=rights.replace("K","");
+  if(rr===0&&cc===0) rights=rights.replace("q","");
+  if(rr===0&&cc===7) rights=rights.replace("k","");
+
+ }
+
+ if(m.double)
+  ep=[(r+rr)/2,c];
+
+ return {b,rights,ep};
+}
+
+/* =================================
+   النقلات القانونية
+================================= */
+
+function legalFor(b,col,rights,ep){
+
+ const out=[];
+
+ for(let r=0;r<8;r++){
+  for(let c=0;c<8;c++){
+
+   if(color(b[r][c])!==col) continue;
+
+   const moves=pseudo(b,r,c,rights,ep);
+
+   for(const m of moves){
+
+    const fake={
+     b,
+     turn:col,
+     rights
+    };
+
+    const n=applyTo(fake,m);
+
+    if(!inCheck(n.b,col))
+     out.push(m);
+   }
+  }
+ }
+
+ return out;
+}
+
+/* =================================
+   قواعد التعادل
+================================= */
+
+function repetitionCount(){
+
+ const key=repetitionKey();
+
+ return s.repetition.filter(x=>x===key).length;
+}
+
+function insufficient(){
+
+ const pieces=[];
+
+ for(let r=0;r<8;r++){
+  for(let c=0;c<8;c++){
+
+   const p=s.b[r][c];
+
+   if(p && p.toLowerCase()!=="k"){
+    pieces.push({
+     type:p.toLowerCase(),
+     square:(r+c)%2
+    });
+   }
+  }
+ }
+
+ if(pieces.length===0) return true;
+
+ if(
+  pieces.length===1 &&
+  ["b","n"].includes(pieces[0].type)
+ ) return true;
+
+ if(pieces.every(p=>p.type==="b")){
+
+  const colors=new Set(pieces.map(p=>p.square));
+
+  if(colors.size===1) return true;
+ }
+
+ return false;
+}
+
+/* =================================
+   سجل المباراة وإنهاؤها
+================================= */
+
+function finish(msg){
+
+ if(s.over) return;
+
+ s.over=true;
+ aiToken++;
+ aiBusy=false;
+
+ stopClock();
+ play("end");
+
+ $("messageTitle").textContent="انتهت المباراة";
+ $("messageText").textContent=msg;
+ $("message").classList.add("show");
+
+ render();
+ save();
+}
+
+function afterMove(){
+
+ const moves=legalFor(
+  s.b,s.turn,s.rights,s.ep
+ );
+
+ if(!moves.length){
+
+  if(inCheck(s.b,s.turn)){
+   finish(
+    s.turn==="w"
+     ?"كش مات — الأسود فاز"
+     :"كش مات — الأبيض فاز"
+   );
+  }else{
+   finish("تعادل — حالة الجمود (Stalemate)");
+  }
+
+  return false;
+ }
+
+ if(s.half>=150){
+  finish("تعادل — قاعدة 75 نقلة");
+  return false;
+ }
+
+ if(insufficient()){
+  finish("تعادل — قطع غير كافية");
+  return false;
+ }
+
+ if(repetitionCount()>=5){
+  finish("تعادل — تكرار الوضع خمس مرات");
+  return false;
+ }
+
+ render();
+
+ if(s.turn==="b" && $("mode").value==="ai" && !s.over){
+
+  const token=++aiToken;
+
+  setTimeout(()=>{
+   if(token===aiToken) aiMove();
+  },180);
+ }
+
+ return true;
+}
+
+/* =================================
+   تنفيذ النقلة الفعلية
+================================= */
+
+function commit(m,fromDrag=false){
+
+ if(s.over) return;
+
+ tick();
+
+ if(s.over) return;
+
+ const p=s.b[m.from[0]][m.from[1]];
+
+ const captured=m.ep
+  ? (s.turn==="w"?"p":"P")
+  : s.b[m.to[0]][m.to[1]];
+
+ if(m.promotion && !m.promoted){
+
+  if($("mode").value==="ai" && s.turn==="b"){
+
+   m={
+    ...m,
+    promotion:"q",
+    promoted:true
+   };
+
+  }else{
+
+   showPromotion(m);
+   return;
+  }
+ }
+
+ const before=snapshot();
+
+ s.history.push({
+  before,
+  from:sqName(m.from),
+  to:sqName(m.to),
+  piece:p,
+  capture:captured,
+  promotion:m.promotion||null
+ });
+
+ const n=applyTo(s,m);
+
+ s.b=n.b;
+ s.rights=n.rights;
+ s.ep=n.ep;
+
+ s.half=(
+  p.toLowerCase()==="p" || captured
+ ) ? 0 : s.half+1;
+
+ if(s.turn==="b") s.full++;
+
+ if(captured)
+  s.captured[s.turn].push(captured);
+
+ s.turn=s.turn==="w"?"b":"w";
+
+ s.started=true;
+ selected=null;
+ legal=[];
+ pointerDrag=null;
+ pendingSlide=fromDrag?null:{from:m.from,to:m.to};
+
+ s.repetition.push(repetitionKey());
+
+ const ongoing=afterMove();
+ if(ongoing){
+  if(inCheck(s.b,s.turn)) play("check");
+  else play(captured?"capture":"move");
+ }
+ save();
+}
+
+/* =================================
+   ترقية البيدق
+================================= */
+
+function showPromotion(m){
+
+ const col=s.turn;
+ const choices=col==="w"?"QRBN":"qrbn";
+
+ $("promotionChoices").innerHTML="";
+
+ for(const p of choices){
+
+  const b=document.createElement("button");
+
+  b.innerHTML=pieceSvg(p);
+  b.setAttribute("aria-label",SYMBOL[p]);
+
+  b.onclick=()=>{
+
+   $("promotion").classList.remove("show");
+
+   commit({
+    ...m,
+    promotion:p,
+    promoted:true
+   });
+  };
+
+  $("promotionChoices").append(b);
+ }
+
+ $("promotion").classList.add("show");
+}
+
+/* =================================
+   التراجع عن النقلات
+================================= */
+
+function undo(){
+
+ if(!s.history.length) return;
+
+ stopClock();
+
+ aiToken++;
+ aiBusy=false;
+ pointerDrag=null;
+
+ $("promotion").classList.remove("show");
+ $("message").classList.remove("show");
+
+ const count=$("mode").value==="ai"
+  ? Math.min(2,s.history.length)
+  : 1;
+
+ for(let i=0;i<count;i++){
+
+  const h=s.history.pop();
+
+  parseFen(h.before.fen);
+
+  s.captured=h.before.captured;
+  s.clocks=h.before.clocks;
+  s.started=h.before.started;
+  s.over=h.before.over;
+  s.repetition=h.before.repetition;
+ }
+
+ selected=null;
+ legal=[];
+
+ updateClock();
+ render();
+
+ if(!s.over) startClock();
+
+ save();
+}
+
+/* =================================
+   تقييم وضع الرقعة
+================================= */
+
+function evaluate(b){
+
+ let score=0;
+ let bishops={w:0,b:0};
+
+ for(let r=0;r<8;r++){
+  for(let c=0;c<8;c++){
+
+   const p=b[r][c];
+
+   if(!p) continue;
+
+   const col=color(p);
+   const t=p.toLowerCase();
+
+   const sign=col==="w"?1:-1;
+
+   const center=
+    3.5-(Math.abs(3.5-r)+Math.abs(3.5-c))/2;
+
+   let bonus=0;
+
+   if(t==="p"){
+
+    bonus=col==="w"
+     ? (6-r)*9
+     : (r-1)*9;
+
+    if(c===3||c===4)
+     bonus+=8;
+
+   }else if(t==="n"){
+
+    bonus=center*12;
+
+   }else if(t==="b"){
+
+    bonus=center*7;
+    bishops[col]++;
+
+   }else if(t==="r"){
+
+    bonus=center*2;
+
+   }else if(t==="q"){
+
+    bonus=center*3;
+
+   }
+
+   score+=sign*(VAL[t]+bonus);
+  }
+ }
+
+ if(bishops.w>=2) score+=30;
+ if(bishops.b>=2) score-=30;
+
+ return score;
+}
+
+/* =================================
+   ترتيب النقلات
+================================= */
+
+function moveOrderScore(m){
+
+ let score=0;
+
+ if(m.capture){
+
+  score+=10000+
+   VAL[m.capture.toLowerCase()]*10-
+   VAL[m.piece.toLowerCase()];
+ }
+
+ if(m.promotion){
+
+  score+=9000+
+   VAL[m.promotion.toLowerCase()];
+ }
+
+ if(m.castle) score+=100;
+
+ return score;
+}
+
+/* =================================
+   مفتاح البحث
+================================= */
+
+function positionKey(pos,maximizing){
+
+ const rows=pos.b.map(r=>r.map(p=>p||".").join("")).join("");
+
+ return rows+
+  (maximizing?"w":"b")+
+  (pos.rights||"-")+
+  (pos.ep?sqName(pos.ep):"-");
+}
+
+/* =================================
+   Quiescence Search
+================================= */
+
+function quiescence(
+ pos,alpha,beta,maximizing,ply=0
+){
+
+ searchNodes++;
+
+ if(searchNodes>70000){
+  searchStopped=true;
+  return evaluate(pos.b);
+ }
+
+ const col=maximizing?"w":"b";
+ const checked=inCheck(pos.b,col);
+
+ const stand=evaluate(pos.b);
+
+ if(ply>=8)
+  return stand;
+
+ let moves=legalFor(
+  pos.b,col,pos.rights,pos.ep
+ );
+
+ if(!moves.length){
+
+  if(checked){
+   return maximizing
+    ? -30000+ply
+    : 30000-ply;
+  }
+
+  return 0;
+ }
+
+ if(!checked){
+
+  if(maximizing){
+
+   if(stand>=beta) return stand;
+
+   alpha=Math.max(alpha,stand);
+
+  }else{
+
+   if(stand<=alpha) return stand;
+
+   beta=Math.min(beta,stand);
+  }
+
+  moves=moves.filter(
+   m=>m.capture||m.promotion
+  );
+ }
+
+ if(!moves.length)
+  return stand;
+
+ moves.sort(
+  (a,b)=>moveOrderScore(b)-moveOrderScore(a)
+ );
+
+ let best=checked
+  ? (maximizing?-Infinity:Infinity)
+  : stand;
+
+ for(const m of moves){
+
+  if(searchStopped) break;
+
+  const n=applyTo(
+   {...pos,turn:col},
+   m
+  );
+
+  const score=quiescence(
+   {
+    b:n.b,
+    rights:n.rights,
+    ep:n.ep
+   },
+   alpha,
+   beta,
+   !maximizing,
+   ply+1
+  );
+
+  if(maximizing){
+
+   best=Math.max(best,score);
+   alpha=Math.max(alpha,best);
+
+  }else{
+
+   best=Math.min(best,score);
+   beta=Math.min(beta,best);
+  }
+
+  if(beta<=alpha) break;
+ }
+
+ return best;
+}
+
+/* =================================
+   Minimax + Alpha-Beta + Transposition Table
+================================= */
+
+function search(pos,depth,alpha,beta,maximizing,ply=0){
+
+ searchNodes++;
+ if(searchNodes>70000){
+  searchStopped=true;
+  return {score:evaluate(pos.b),move:null};
+ }
+
+ const col=maximizing?"w":"b";
+ const alphaOriginal=alpha;
+ const betaOriginal=beta;
+ const key=positionKey(pos,maximizing);
+ const cached=transTable.get(key);
+ let preferred=null;
+
+ if(cached){
+  preferred=cached.move||null;
+  if(cached.depth>=depth){
+   if(cached.flag==="EXACT")
+    return {score:cached.score,move:cached.move||null};
+   if(cached.flag==="LOWER") alpha=Math.max(alpha,cached.score);
+   else if(cached.flag==="UPPER") beta=Math.min(beta,cached.score);
+   if(alpha>=beta) return {score:cached.score,move:cached.move||null};
+  }
+ }
+
+ if(depth<=0){
+  return {score:quiescence(pos,alpha,beta,maximizing,ply),move:null};
+ }
+
+ let moves=legalFor(pos.b,col,pos.rights,pos.ep);
+ if(!moves.length){
+  return {score:inCheck(pos.b,col)
+   ? (maximizing?-30000+ply:30000-ply)
+   : 0,move:null};
+ }
+
+ moves.sort((a,b)=>{
+  if(preferred){
+   const am=sameMove(a,preferred), bm=sameMove(b,preferred);
+   if(am!==bm) return am?-1:1;
+  }
+  return moveOrderScore(b)-moveOrderScore(a);
+ });
+
+ let best=null;
+ let value=maximizing?-Infinity:Infinity;
+ for(const move of moves){
+  if(searchStopped) break;
+  const next=applyTo({...pos,turn:col},move);
+  const result=search({b:next.b,rights:next.rights,ep:next.ep},
+   depth-1,alpha,beta,!maximizing,ply+1);
+
+  if(maximizing){
+   if(result.score>value){value=result.score;best=move;}
+   alpha=Math.max(alpha,value);
+  }else{
+   if(result.score<value){value=result.score;best=move;}
+   beta=Math.min(beta,value);
+  }
+  if(beta<=alpha) break;
+ }
+
+ if(searchStopped) return {score:value,move:best};
+ const flag=value<=alphaOriginal?"UPPER":
+  value>=betaOriginal?"LOWER":"EXACT";
+ if(transTable.size>120000) transTable.clear();
+ transTable.set(key,{depth,score:value,flag,move:best});
+ return {score:value,move:best};
+}
+
+function sameMove(a,b){
+ if(!a||!b) return false;
+ return a.from[0]===b.from[0] && a.from[1]===b.from[1] &&
+  a.to[0]===b.to[0] && a.to[1]===b.to[1] &&
+  a.promotion===b.promotion && a.castle===b.castle && !!a.ep===!!b.ep;
+}
+
+// Perft is a standard move-generation diagnostic (not used during normal play).
+function perft(pos,depth){
+ if(depth===0) return 1;
+ const col=pos.turn;
+ const moves=legalFor(pos.b,col,pos.rights,pos.ep);
+ let nodes=0;
+ for(const move of moves){
+  const next=applyTo({...pos,turn:col},move);
+  nodes+=perft({b:next.b,turn:col==="w"?"b":"w",
+   rights:next.rights,ep:next.ep},depth-1);
+ }
+ return nodes;
+}
+
+/* =================================
+   الذكاء الاصطناعي
+================================= */
+
+function aiMove(){
+
+ if(s.over || s.turn!=="b" || aiBusy) return;
+ aiBusy=true;
+ $("engineInfo").textContent="الكمبيوتر يحلل النقلات...";
+
+ try{
+  const moves=legalFor(s.b,"b",s.rights,s.ep);
+  if(!moves.length) return;
+  const level=+$("level").value;
+  let move=null;
+  let completedDepth=0;
+
+  if(level===1){
+   move=moves[Math.floor(Math.random()*moves.length)];
+  }else{
+   searchNodes=0;
+   searchStopped=false;
+   transTable.clear();
+   const maxDepth=level===2?2:4;
+   let bestResult=null;
+
+   // Iterative deepening: retain only a fully completed search iteration.
+   for(let depth=1;depth<=maxDepth;depth++){
+    searchStopped=false;
+    const result=search({b:s.b,rights:s.rights,ep:s.ep},
+     depth,-Infinity,Infinity,false);
+    if(searchStopped || !result.move) break;
+    bestResult={...result,depth};
+    completedDepth=depth;
+   }
+   move=bestResult?.move||moves[0];
+   $("engineInfo").textContent=
+    `المحرك: عمق ${completedDepth} | Nodes: ${searchNodes.toLocaleString()}`;
+  }
+
+  if(move && !s.over && s.turn==="b") commit(move);
+ }finally{
+  aiBusy=false;
+ }
+}
+
+/* =================================
+   الصوت (وضع كلاسيكي واحد بصوت عالٍ)
+================================= */
+
+function makeAudioNoise(ctx,dest,now,dur,freq,q,vol){
+ const len=Math.max(1,Math.floor(ctx.sampleRate*dur));
+ const buf=ctx.createBuffer(1,len,ctx.sampleRate);
+ const data=buf.getChannelData(0);
+ for(let i=0;i<len;i++){
+  data[i]=(Math.random()*2-1)*Math.exp((-i/len)*4.2);
+ }
+ const src=ctx.createBufferSource();
+ src.buffer=buf;
+ const filter=ctx.createBiquadFilter();
+ filter.type="bandpass";
+ filter.frequency.setValueAtTime(freq,now);
+ filter.Q.setValueAtTime(q,now);
+ const g=ctx.createGain();
+ g.gain.setValueAtTime(vol,now);
+ g.gain.exponentialRampToValueAtTime(.0001,now+dur);
+ src.connect(filter);
+ filter.connect(g);
+ g.connect(dest);
+ src.start(now);
+ src.stop(now+dur+.01);
+}
+
+function makeAudioTone(ctx,dest,start,dur,wave,f1,f2,vol){
+ const o=ctx.createOscillator();
+ const g=ctx.createGain();
+ o.type=wave;
+ o.frequency.setValueAtTime(f1,start);
+ if(f2!==f1) o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),start+dur);
+ g.gain.setValueAtTime(.0001,start);
+ g.gain.exponentialRampToValueAtTime(vol,start+.006);
+ g.gain.exponentialRampToValueAtTime(.0001,start+dur);
+ o.connect(g);
+ g.connect(dest);
+ o.start(start);
+ o.stop(start+dur+.015);
+}
+
+function play(type){
+
+ if(!sound) return;
+
+ try{
+
+  const AC=window.AudioContext||window.webkitAudioContext;
+
+  if(!AC) return;
+
+  if(!audio){
+   audio=new AC();
+   const comp=audio.createDynamicsCompressor();
+   comp.threshold.setValueAtTime(-14,audio.currentTime);
+   comp.knee.setValueAtTime(10,audio.currentTime);
+   comp.ratio.setValueAtTime(6,audio.currentTime);
+   comp.attack.setValueAtTime(.002,audio.currentTime);
+   comp.release.setValueAtTime(.12,audio.currentTime);
+   audioMaster=audio.createGain();
+   audioMaster.gain.setValueAtTime(1.85,audio.currentTime);
+   audioMaster.connect(comp);
+   comp.connect(audio.destination);
+  }
+
+  const dest=audioMaster||audio.destination;
+
+  const makeClassic=()=>{
+   if(!sound||!audio) return;
+   const now=audio.currentTime;
+   if(type==="move"){
+    makeAudioNoise(audio,dest,now,.05,820,2,.58);
+    makeAudioTone(audio,dest,now,.085,"triangle",215,84,.62);
+    makeAudioTone(audio,dest,now,.06,"sine",130,68,.42);
+   }else if(type==="capture"){
+    makeAudioNoise(audio,dest,now,.065,1250,1.8,.78);
+    makeAudioTone(audio,dest,now,.105,"triangle",300,92,.76);
+    makeAudioNoise(audio,dest,now+.032,.045,980,2.2,.48);
+    makeAudioTone(audio,dest,now+.03,.07,"sine",175,72,.44);
+   }else if(type==="check"){
+    makeAudioNoise(audio,dest,now,.045,1050,1.9,.48);
+    makeAudioTone(audio,dest,now,.13,"triangle",493.88,466.16,.55);
+    makeAudioTone(audio,dest,now+.08,.16,"sine",659.25,622.25,.52);
+   }else{
+    makeAudioTone(audio,dest,now,.18,"triangle",392,392,.52);
+    makeAudioTone(audio,dest,now+.095,.2,"triangle",493.88,493.88,.52);
+    makeAudioTone(audio,dest,now+.19,.28,"sine",587.33,587.33,.56);
+   }
+  };
+
+  if(audio.state==="suspended"){
+   audio.resume().then(makeClassic).catch(()=>{});
+  }else{
+   makeClassic();
+  }
+
+ }catch(e){}
+}
+
+/* =================================
+   الساعة
+================================= */
+
+function fmt(n){
+
+ n=Math.max(0,Math.floor(n));
+
+ return `${String(Math.floor(n/60)).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`;
+}
+
+function updateClock(){
+
+ $("clockW").textContent=fmt(s.clocks.w);
+ $("clockB").textContent=fmt(s.clocks.b);
+}
+
+function tick(){
+
+ const now=Date.now();
+
+ const dt=Math.max(0,(now-lastTick)/1000);
+
+ lastTick=now;
+
+ if(!s.started||s.over||s.initialTime===0){
+  updateClock();
+  return;
+ }
+
+ s.clocks[s.turn]-=dt;
+
+ if(s.clocks[s.turn]<=0){
+
+  s.clocks[s.turn]=0;
+  updateClock();
+
+  finish(
+   s.turn==="w"
+    ?"انتهى وقت الأبيض — الأسود فاز"
+    :"انتهى وقت الأسود — الأبيض فاز"
+  );
+
+  return;
+ }
+
+ updateClock();
+
+ if(now-lastSave>4000){
+  save();
+  lastSave=now;
+ }
+}
+
+function startClock(){
+
+ stopClock();
+
+ lastTick=Date.now();
+
+ timer=setInterval(tick,250);
+}
+
+function stopClock(){
+
+ if(timer){
+  clearInterval(timer);
+  timer=null;
+ }
+}
+
+/* =================================
+   الحفظ والاستعادة
+================================= */
+
+function save(){
+
+ try{
+
+  const data={
+   fen:fen(),
+   history:s.history,
+   captured:s.captured,
+   clocks:s.clocks,
+   repetition:s.repetition,
+   initialTime:s.initialTime,
+   started:s.started,
+   over:s.over,
+   mode:$("mode").value,
+   level:$("level").value,
+   theme:$("theme").value,
+   flipped,
+   sound
+  };
+
+  localStorage.setItem(
+   "mahmoud_chess_save",
+   JSON.stringify(data)
+  );
+
+ }catch(e){
+  console.warn("Save failed",e);
+ }
+}
+
+function restore(){
+
+ try{
+
+  const raw=localStorage.getItem(
+   "mahmoud_chess_save"
+  );
+
+  if(!raw){
+   alert("لا توجد مباراة محفوظة");
+   return;
+  }
+
+  const d=JSON.parse(raw);
+
+  if(!d || typeof d.fen!=="string")
+   throw new Error("Invalid save");
+
+  stopClock();
+
+  aiToken++;
+  aiBusy=false;
+  pointerDrag=null;
+
+  parseFen(d.fen);
+
+  s.history=Array.isArray(d.history)?d.history:[];
+  s.captured=d.captured||{w:[],b:[]};
+  s.clocks=d.clocks||{w:600,b:600};
+  s.repetition=Array.isArray(d.repetition)
+   ? d.repetition
+   : [repetitionKey()];
+
+  s.initialTime=d.initialTime??10;
+  s.started=!!d.started;
+  s.over=!!d.over;
+
+  $("mode").value=d.mode||"pvp";
+  $("level").value=d.level||"2";
+  $("theme").value=d.theme||"wood";
+
+  flipped=!!d.flipped;
+  sound=d.sound!==false;
+
+  $("sound").textContent=sound?"🔊 الصوت":"🔇 صامت";
+
+  selected=null;
+  legal=[];
+
+  $("promotion").classList.remove("show");
+  $("message").classList.remove("show");
+
+  applyTheme();
+
+  updateClock();
+  render();
+
+  if(s.over){
+   $("status").textContent="انتهت المباراة";
+  }else{
+   startClock();
+  }
+
+  alert("تمت استعادة المباراة");
+
+ }catch(e){
+
+  stopClock();
+  alert("تعذر استعادة المباراة: ملف الحفظ غير صالح");
+
+  console.error(e);
+ }
+}
+
+/* =================================
+   مباراة جديدة
+================================= */
+
+function newGame(){
+
+ stopClock();
+
+ aiToken++;
+ aiBusy=false;
+
+ s=initial();
+
+ s.initialTime=+$("time").value;
+
+ s.clocks={
+  w:s.initialTime*60,
+  b:s.initialTime*60
+ };
+
+ s.repetition=[repetitionKey()];
+
+ selected=null;
+ legal=[];
+ pointerDrag=null;
+
+ flipped=false;
+
+ $("promotion").classList.remove("show");
+ $("message").classList.remove("show");
+
+ updateClock();
+ render();
+
+ save();
+ startClock();
+}
+
+/* =================================
+   عرض الرقعة
+================================= */
+
+function render(){
+
+ const el=$("board");
+ const slide=pendingSlide;
+ pendingSlide=null;
+
+ el.innerHTML="";
+
+ const check=inCheck(s.b,s.turn);
+ const king=kingPos(s.b,s.turn);
+ let slideEl=null;
+
+ for(let vr=0;vr<8;vr++){
+
+  for(let vc=0;vc<8;vc++){
+
+   const r=flipped?7-vr:vr;
+   const c=flipped?7-vc:vc;
+
+   const cell=document.createElement("div");
+
+   cell.className="sq "+
+    ((r+c)%2?"dark":"light");
+
+   if(s.history.length){
+
+    const h=s.history[s.history.length-1];
+
+    if(
+     h.from===sqName([r,c])||
+     h.to===sqName([r,c])
+    ){
+     cell.classList.add("last");
+    }
+   }
+
+   if(
+    selected &&
+    selected[0]===r &&
+    selected[1]===c
+   ){
+    cell.classList.add("sel");
+   }
+
+   if(
+    check &&
+    king &&
+    king[0]===r &&
+    king[1]===c
+   ){
+    cell.classList.add("check");
+   }
+
+   if(vc===0){
+
+    const x=document.createElement("span");
+
+    x.className="coord rank";
+    x.textContent=8-r;
+
+    cell.append(x);
+   }
+
+   if(vr===7){
+
+    const x=document.createElement("span");
+
+    x.className="coord file";
+    x.textContent="abcdefgh"[c];
+
+    cell.append(x);
+   }
+
+   const p=s.b[r][c];
+
+   if(p){
+
+    const x=document.createElement("span");
+    const isDraggingThis=!!(
+     pointerDrag?.moved &&
+     pointerDrag.from &&
+     pointerDrag.from[0]===r &&
+     pointerDrag.from[1]===c
+    );
+
+    x.className="piece"+(isDraggingThis?" is-hidden":"");
+    x.innerHTML=pieceSvg(p);
+
+    if(slide && slide.to[0]===r && slide.to[1]===c){
+     slideEl={el:x,from:slide.from,to:slide.to};
+    }
+
+    cell.append(x);
+   }
+
+   const m=selected&&legal.find(
+    x=>x.to[0]===r&&x.to[1]===c
+   );
+
+   if(m){
+
+    const mark=document.createElement("i");
+
+    mark.className=(s.b[r][c]||m.ep)
+     ?"capture":"dot";
+
+    cell.append(mark);
+   }
+
+   el.append(cell);
+  }
+ }
+
+ if(slideEl){
+  const sqSize=el.clientWidth/8;
+  const fVr=flipped?7-slideEl.from[0]:slideEl.from[0];
+  const fVc=flipped?7-slideEl.from[1]:slideEl.from[1];
+  const tVr=flipped?7-slideEl.to[0]:slideEl.to[0];
+  const tVc=flipped?7-slideEl.to[1]:slideEl.to[1];
+  const dx=(fVc-tVc)*sqSize;
+  const dy=(fVr-tVr)*sqSize;
+  if(dx||dy){
+   slideEl.el.style.transition="none";
+   slideEl.el.style.transform=`translate(${dx}px,${dy}px)`;
+   void slideEl.el.offsetWidth;
+   slideEl.el.style.transition="transform 150ms cubic-bezier(0.22,1,0.36,1)";
+   slideEl.el.style.transform="translate(0px,0px)";
+  }
+ }
+
+ $("status").textContent=s.over
+  ?"انتهت المباراة"
+  :(s.turn==="w"?"دور الأبيض ⚪":"دور الأسود ⚫");
+
+ $("turn").textContent=s.turn==="w"
+  ?"الأبيض يلعب":"الأسود يلعب";
+
+ $("capW").innerHTML=
+  s.captured.w.map(p=>pieceSvg(p)).join("");
+
+ $("capB").innerHTML=
+  s.captured.b.map(p=>pieceSvg(p)).join("");
+
+ $("history").textContent=s.history.map((h,i)=>{
+
+  return `${Math.floor(i/2)+1}${
+   i%2?". ":"... "
+  }${h.from}-${h.to}${
+   h.promotion?"="+h.promotion.toUpperCase():""
+  }${h.capture?" ×":""}`;
+
+ }).join("   ")||"لا توجد نقلات بعد";
+}
+
+/* =================================
+   تحديد القطع
+================================= */
+
+function select(r,c){
+
+ if(
+  s.over ||
+  ($("mode").value==="ai"&&s.turn==="b") ||
+  color(s.b[r][c])!==s.turn
+ ){
+  return;
+ }
+
+ selected=[r,c];
+
+ legal=legalFor(
+  s.b,s.turn,s.rights,s.ep
+ ).filter(
+  m=>m.from[0]===r&&m.from[1]===c
+ );
+
+ render();
+}
+
+function tap(r,c){
+
+ if(
+  s.over ||
+  ($("mode").value==="ai"&&s.turn==="b")
+ ){
+  return;
+ }
+
+ const p=s.b[r][c];
+
+ if(selected){
+
+  const m=legal.find(
+   x=>x.to[0]===r&&x.to[1]===c
+  );
+
+  if(m){
+   commit(m,false);
+   return;
+  }
+ }
+
+ if(color(p)===s.turn){
+
+  select(r,c);
+
+ }else{
+
+  selected=null;
+  legal=[];
+  render();
+ }
+}
+
+/* =================================
+   السحب والإفلات السلس
+================================= */
+
+function getSquareFromPoint(clientX,clientY){
+ const rect=$("board").getBoundingClientRect();
+ if(
+  clientX<rect.left||clientX>rect.right||
+  clientY<rect.top||clientY>rect.bottom
+ ) return null;
+ const vc=Math.min(7,Math.max(0,Math.floor(((clientX-rect.left)/rect.width)*8)));
+ const vr=Math.min(7,Math.max(0,Math.floor(((clientY-rect.top)/rect.height)*8)));
+ return [flipped?7-vr:vr,flipped?7-vc:vc];
+}
+
+function hideDragGhost(){
+ const ghost=$("dragGhost");
+ ghost.style.display="none";
+ ghost.innerHTML="";
+}
+
+$("board").addEventListener("pointerdown",e=>{
+
+ if(e.button!==0 && e.pointerType==="mouse") return;
+
+ const pos=getSquareFromPoint(e.clientX,e.clientY);
+ if(!pos) return;
+ const [r,c]=pos;
+
+ const current=s.b[r][c];
+
+ const canDrag=
+  !!current &&
+  !s.over &&
+  !($("mode").value==="ai"&&s.turn==="b") &&
+  color(current)===s.turn;
+
+ if(canDrag){
+  select(r,c);
+ }
+
+ pointerDrag={
+  from:canDrag?[r,c]:null,
+  start:[r,c],
+  piece:canDrag?current:null,
+  id:e.pointerId,
+  startX:e.clientX,
+  startY:e.clientY,
+  moved:false
+ };
+});
+
+document.addEventListener("pointermove",e=>{
+
+ if(!pointerDrag||e.pointerId!==pointerDrag.id)
+  return;
+
+ if(!pointerDrag.moved && pointerDrag.from){
+  if(Math.hypot(e.clientX-pointerDrag.startX,e.clientY-pointerDrag.startY)>7){
+   pointerDrag.moved=true;
+   const ghost=$("dragGhost");
+   const sqSize=Math.max(36,($("board").clientWidth||360)/8);
+   ghost.style.width=Math.round(sqSize*0.92)+"px";
+   ghost.style.height=Math.round(sqSize*0.92)+"px";
+   ghost.innerHTML=pieceSvg(pointerDrag.piece);
+   ghost.style.display="block";
+   render();
+  }
+ }
+
+ if(pointerDrag.moved){
+  const ghost=$("dragGhost");
+  ghost.style.left=e.clientX+"px";
+  ghost.style.top=e.clientY+"px";
+ }
+});
+
+document.addEventListener("pointerup",e=>{
+
+ if(!pointerDrag||e.pointerId!==pointerDrag.id)
+  return;
+
+ const drag=pointerDrag;
+ pointerDrag=null;
+ hideDragGhost();
+
+ if(drag.moved&&drag.from){
+
+  const dest=getSquareFromPoint(e.clientX,e.clientY);
+
+  if(!dest){
+   selected=null;
+   legal=[];
+   render();
+   return;
+  }
+
+  const [r,c]=dest;
+  const moves=legalFor(
+   s.b,s.turn,s.rights,s.ep
+  );
+
+  const m=moves.find(x=>
+   x.from[0]===drag.from[0] &&
+   x.from[1]===drag.from[1] &&
+   x.to[0]===r &&
+   x.to[1]===c
+  );
+
+  if(m){
+   commit(m,true);
+  }else if(r===drag.from[0]&&c===drag.from[1]){
+   select(r,c);
+  }else{
+   selected=null;
+   legal=[];
+   render();
+  }
+
+ }else if(!drag.moved){
+
+  tap(drag.start[0],drag.start[1]);
+ }
+});
+
+document.addEventListener("pointercancel",()=>{
+ pointerDrag=null;
+ hideDragGhost();
+ render();
+});
+
+/* =================================
+   ألوان الرقعة
+================================= */
+
+function applyTheme(){
+
+ const t=$("theme").value;
+
+ document.documentElement.style.setProperty(
+  "--light",
+  t==="green"?"#eeeed2":
+  t==="blue"?"#dee3e6":"#eee2cc"
+ );
+
+ document.documentElement.style.setProperty(
+  "--dark",
+  t==="green"?"#769656":
+  t==="blue"?"#8ca2ad":"#9b7653"
+ );
+}
+
+/* =================================
+   تكبير الرقعة
+================================= */
+
+const floatingBtn=document.createElement("button");
+
+floatingBtn.type="button";
+floatingBtn.className="board-expand-floating";
+floatingBtn.textContent="✕ إغلاق التكبير";
+
+document.querySelector(".board-wrap").append(floatingBtn);
+
+function setBoardExpanded(expanded){
+
+ const messageModal=$("message");
+ const boardWrap=document.querySelector(".board-wrap");
+
+ document.body.classList.toggle(
+  "board-expanded",expanded
+ );
+
+ // In expanded mode, place the result dialog inside the board's own
+ // stacking context so it always appears above the chessboard on mobile.
+ if(expanded){
+  if(messageModal.parentElement!==boardWrap){
+   boardWrap.appendChild(messageModal);
+  }
+ }else if(messageModal.parentElement!==document.body){
+  document.body.appendChild(messageModal);
+ }
+
+ window.scrollTo(0,0);
+}
+
+$("fullscreen").onclick=()=>{
+ setBoardExpanded(true);
+};
+
+floatingBtn.onclick=()=>{
+ setBoardExpanded(false);
+};
+
+document.addEventListener("keydown",e=>{
+
+ if(
+  e.key==="Escape" &&
+  document.body.classList.contains("board-expanded")
+ ){
+  setBoardExpanded(false);
+ }
+});
+
+/* =================================
+   أزرار التحكم
+================================= */
+
+$("new").onclick=newGame;
+
+$("undo").onclick=undo;
+
+$("flip").onclick=()=>{
+ flipped=!flipped;
+ render();
+};
+
+$("sound").onclick=()=>{
+
+ sound=!sound;
+
+ $("sound").textContent=
+  sound?"🔊 الصوت":"🔇 صامت";
+
+ if(sound) play("move");
+
+ save();
+};
+
+$("fen").onclick=async()=>{
+
+ try{
+
+  await navigator.clipboard.writeText(fen());
+
+  alert("تم نسخ FEN");
+
+ }catch(e){
+
+  prompt("انسخ FEN:",fen());
+ }
+};
+
+$("save").onclick=()=>{
+ save();
+ alert("تم حفظ المباراة على هذا الجهاز");
+};
+
+$("resume").onclick=restore;
+
+$("reset").onclick=()=>{
+
+ if(confirm("هل تريد مسح المباراة المحفوظة؟")){
+
+  localStorage.removeItem("mahmoud_chess_save");
+
+  newGame();
+ }
+};
+
+$("messageNew").onclick=newGame;
+$("messageClose").onclick=()=>{
+ $("message").classList.remove("show");
+};
+
+$("mode").onchange=newGame;
+
+$("time").onchange=newGame;
+
+$("theme").onchange=()=>{
+ applyTheme();
+ save();
+};
+
+$("level").onchange=save;
+
+/* =================================
+   حفظ آمن عند مغادرة الصفحة
+================================= */
+
+document.addEventListener("visibilitychange",()=>{
+
+ if(document.hidden && s){
+  tick();
+  save();
+ }
+});
+
+window.addEventListener("pagehide",()=>{
+
+ if(s){
+  tick();
+  save();
+ }
+});
+
+/* =================================
+   تشغيل اللعبة
+================================= */
+
+s=initial();
+
+s.initialTime=+$("time").value;
+
+s.clocks={
+ w:s.initialTime*60,
+ b:s.initialTime*60
+};
+
+s.repetition=[repetitionKey()];
+
+applyTheme();
+updateClock();
+render();
+startClock();
+
+</script>
+
+</body>
+</html>

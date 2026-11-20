@@ -1,0 +1,145 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidInviteCode(code) {
+      return code is string && code.size() >= 4 && code.size() <= 12 && code.matches('^[A-Z0-9]{4,12}$');
+    }
+
+    function isAllowedTimeControl(t) {
+      return (t is int || t is float) && (t == 0 || t == 3 || t == 5 || t == 10 || t == 15);
+    }
+
+    function isValidInvite(data, pathCode) {
+      return data.keys().hasAll([
+          'code', 'ownerUid', 'hostName', 'timeMinutes',
+          'preferredColor', 'isPublic', 'status', 'inviteUrl',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'code', 'ownerUid', 'hostName', 'timeMinutes',
+          'preferredColor', 'isPublic', 'status', 'inviteUrl',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidInviteCode(data.code)
+        && data.code == pathCode
+        && data.ownerUid is string
+        && isValidId(data.ownerUid)
+        && data.hostName is string && data.hostName.size() >= 1 && data.hostName.size() <= 40
+        && isAllowedTimeControl(data.timeMinutes)
+        && data.preferredColor is string && data.preferredColor in ['random', 'w', 'b']
+        && data.isPublic is bool
+        && data.status is string && data.status in ['waiting', 'playing', 'finished']
+        && data.inviteUrl is string && data.inviteUrl.size() >= 1 && data.inviteUrl.size() <= 240
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidMatch(data) {
+      return data.keys().hasAll([
+          'ownerUid', 'roomCode', 'mode', 'whiteName', 'blackName',
+          'winner', 'resultText', 'finalFen', 'timeMinutes',
+          'movesCount', 'moves', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'ownerUid', 'roomCode', 'mode', 'whiteName', 'blackName',
+          'winner', 'resultText', 'finalFen', 'timeMinutes',
+          'movesCount', 'moves', 'createdAt'
+        ])
+        && data.ownerUid is string
+        && isValidId(data.ownerUid)
+        && data.roomCode is string && data.roomCode.size() >= 1 && data.roomCode.size() <= 16
+        && data.roomCode.matches('^[A-Z0-9_\\-]{1,16}$')
+        && data.mode is string && data.mode in ['online', 'ai', 'pvp']
+        && data.whiteName is string && data.whiteName.size() >= 1 && data.whiteName.size() <= 40
+        && data.blackName is string && data.blackName.size() >= 1 && data.blackName.size() <= 40
+        && data.winner is string && data.winner in ['w', 'b', 'draw']
+        && data.resultText is string && data.resultText.size() >= 1 && data.resultText.size() <= 120
+        && data.finalFen is string && data.finalFen.size() >= 10 && data.finalFen.size() <= 140
+        && isAllowedTimeControl(data.timeMinutes)
+        && (data.movesCount is int || data.movesCount is float)
+        && data.movesCount >= 0 && data.movesCount <= 350
+        && data.moves is list
+        && data.moves.size() <= 350
+        && (data.moves.size() == 0 || (data.moves[0] is string && data.moves[0].size() <= 24))
+        && data.createdAt is timestamp;
+    }
+
+    match /invites/{inviteCode} {
+      // Allow verified signed-in players to look up a specific invite by exact code
+      allow get: if isVerifiedUser() && isValidInviteCode(inviteCode);
+
+      // Listing invites is strictly restricted to the owner's own invites
+      allow list: if isVerifiedUser() && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidInviteCode(inviteCode)
+        && isValidInvite(incoming(), inviteCode)
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerifiedUser()
+        && isValidInviteCode(inviteCode)
+        && isValidInvite(incoming(), inviteCode)
+        && existing().ownerUid == request.auth.uid
+        && incoming().ownerUid == existing().ownerUid
+        && incoming().code == existing().code
+        && incoming().createdAt == existing().createdAt
+        && existing().status != 'finished'
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+
+      allow delete: if isVerifiedUser()
+        && isValidInviteCode(inviteCode)
+        && existing().ownerUid == request.auth.uid;
+    }
+
+    match /matches/{matchId} {
+      allow get: if isVerifiedUser()
+        && isValidId(matchId)
+        && resource.data.ownerUid == request.auth.uid;
+
+      allow list: if isVerifiedUser()
+        && resource.data.ownerUid == request.auth.uid;
+
+      allow create: if isVerifiedUser()
+        && isValidId(matchId)
+        && isValidMatch(incoming())
+        && incoming().ownerUid == request.auth.uid
+        && incoming().createdAt == request.time;
+
+      // Matches are immutable historical archives
+      allow update: if false;
+
+      allow delete: if isVerifiedUser()
+        && isValidId(matchId)
+        && resource.data.ownerUid == request.auth.uid;
+    }
+  }
+}

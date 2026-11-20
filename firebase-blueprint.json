@@ -1,0 +1,176 @@
+{
+  "entities": {
+    "InviteRecord": {
+      "title": "InviteRecord",
+      "description": "Recorded online chess match invite code and room metadata.",
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 12,
+          "pattern": "^[A-Z0-9]{4,12}$",
+          "description": "Unique uppercase alphanumeric room invite code."
+        },
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the user who created the invite."
+        },
+        "hostName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Display name of the room host."
+        },
+        "timeMinutes": {
+          "type": "number",
+          "description": "Game clock duration in minutes (0, 3, 5, 10, 15)."
+        },
+        "preferredColor": {
+          "type": "string",
+          "enum": ["random", "w", "b"],
+          "description": "Host color preference."
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Whether the room was listed publicly in the lobby."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["waiting", "playing", "finished"],
+          "description": "Current lifecycle status of the invited room."
+        },
+        "inviteUrl": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240,
+          "description": "Shareable URL containing the room invite code."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when invite was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when invite status was last updated."
+        }
+      },
+      "required": [
+        "code",
+        "ownerUid",
+        "hostName",
+        "timeMinutes",
+        "preferredColor",
+        "isPublic",
+        "status",
+        "inviteUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "MatchRecord": {
+      "title": "MatchRecord",
+      "description": "Completed chess match archive stored for post-game review and engine analysis.",
+      "type": "object",
+      "properties": {
+        "ownerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Firebase Auth UID of the user archiving this match."
+        },
+        "roomCode": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16,
+          "pattern": "^[A-Z0-9_\\-]{1,16}$",
+          "description": "Room invite code for online games or LOCAL for offline games."
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["online", "ai", "pvp"],
+          "description": "Game mode."
+        },
+        "whiteName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "White player display name."
+        },
+        "blackName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 40,
+          "description": "Black player display name."
+        },
+        "winner": {
+          "type": "string",
+          "enum": ["w", "b", "draw"],
+          "description": "Match outcome."
+        },
+        "resultText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Human-readable Arabic match result summary."
+        },
+        "finalFen": {
+          "type": "string",
+          "minLength": 10,
+          "maxLength": 140,
+          "description": "Final board FEN string."
+        },
+        "timeMinutes": {
+          "type": "number",
+          "description": "Initial clock minutes."
+        },
+        "movesCount": {
+          "type": "number",
+          "description": "Total half-moves (plies) played."
+        },
+        "moves": {
+          "type": "array",
+          "description": "Bounded list of encoded half-moves (from:to:promo:capture) up to 350 plies.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when match was archived."
+        }
+      },
+      "required": [
+        "ownerUid",
+        "roomCode",
+        "mode",
+        "whiteName",
+        "blackName",
+        "winner",
+        "resultText",
+        "finalFen",
+        "timeMinutes",
+        "movesCount",
+        "moves",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/invites/{inviteCode}": {
+      "schema": { "$ref": "#/entities/InviteRecord" },
+      "description": "Recorded online chess invite codes created by authenticated players."
+    },
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/MatchRecord" },
+      "description": "Archived completed chess matches for post-game engine analysis."
+    }
+  }
+}

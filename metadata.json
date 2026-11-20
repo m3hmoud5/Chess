@@ -1,0 +1,6 @@
+{
+  "name": "محمود شطرنج — Mahmoud Chess",
+  "description": "موقع شطرنج متكامل يدعم اللعب المباشر عبر الإنترنت ضد المنافسين واللعب ضد الذكاء الاصطناعي مع إمكانية التثبيت والتحميل للعمل بدون إنترنت.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
